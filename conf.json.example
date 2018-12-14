@@ -1,0 +1,22 @@
+{
+  "Env": "DEV",
+  "Phones": [
+    {
+      "Name": "Timme",
+      "Ip": "10.39.144.66",
+      "Port": "60010"
+    },
+    {
+      "Name": "Main st",
+      "Ip": "10.39.102.240",
+      "Port": "60010"
+    }
+  ],
+  "Database": {
+    "Host": "localhost:27017",
+    "Dbname": "phones",
+    "Username": "username",
+    "Password": "password"
+  },
+  "Log": true
+}
