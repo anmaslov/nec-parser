@@ -15,6 +15,10 @@ type Kpi struct {
 	current float32
 }
 
+//todo init function for current
+/*func init()  {
+}*/
+
 func fill() (Kpi) {
 	return Kpi{current: startKpi, min: minKpi, max: maxKpi}
 }
