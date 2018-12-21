@@ -18,6 +18,8 @@ func (p *DataProducer) getOutChan() <- chan CallInfo{
 	return p.OutChan
 }
 
+const MAX_PARSED_CICLES int = 100
+
 //Получение данных со станции
 func stantionListener(phone Stantion, p DataProducer)  {
 	for {
@@ -30,6 +32,7 @@ func stantionListener(phone Stantion, p DataProducer)  {
 		defer conn.Close()
 		kpi := fill()
 		//Основной цикл для получения данных
+		i := 0 //Счетчик распарсенных данных
 		for {
 			r1 := smdr.SetRequest(smdr.DataRequest())
 			if wr, err := conn.Write([]byte(r1)); //Запрос #1
@@ -62,14 +65,20 @@ func stantionListener(phone Stantion, p DataProducer)  {
 				call := fillParam(&res)
 				call.Stantion = phone.Name
 				p.OutChan <- call // Отправляем данные в канал
-				kpi.stepDown() //Уменьшаем интервал
-
 				//Отправляем запрос о то, что все ок
 				r4 := smdr.SetRequest(smdr.ClientResponse(res.Sequence))
 				if wr, err := conn.Write([]byte(r4)); //Запрос #4
 					wr == 0 || err != nil {
 					log.Println("error on", phone.Name, "error text", err)
+				} else {
+					kpi.stepDown() //Уменьшаем интервал
+					i++ //Увеличиваем счетчик распарсеных данных
 				}
+			}
+
+			if i >= MAX_PARSED_CICLES {
+				log.Println("disconnect from stantion", phone.Name, "limit of parsed data", i)
+				break;
 			}
 
 			d := time.Duration(kpi.current * float32(time.Second))
