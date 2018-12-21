@@ -21,7 +21,7 @@ type Stantion struct {
 
 type Configuration struct {
 	Env 	  	string
-	Phones    	[]Stantion
+	//Phones    	[]Stantion
 	Database	Db
 	Log			bool
 }
