@@ -35,6 +35,12 @@ type CallInfo struct{
 	CallMetering	string `bson:"call_metering"`
 }
 
+type Phones struct {
+	Id bson.ObjectId `bson:"_id"`
+	Ip string `bson:"ip"`
+	Port string `bson:"port"`
+}
+
 type MongoStore struct {
 	session *mgo.Session
 }
@@ -93,62 +99,19 @@ func insertCall(call *CallInfo) bool {
 	return true
 }
 
-func getCalls(filter *CallFilter) []CallInfo{
-	// получаем коллекцию
-	c := mongoStore.session.DB(cfg.Database.Dbname).C(collection)
-	// критерий выборки
+func getPhones() ([]Phones, error){
+	c := mongoStore.session.DB(cfg.Database.Dbname).C("phones")
 
 	query := bson.M{}
+	query["enabled"] = bson.M{"$eq": true}
 
-	if len(filter.tp) > 0 {
-		query["tp"] = bson.M{"$eq": filter.tp}
-	}
-
-	if len(filter.phone) > 0 {
-		query["phone"] = bson.M{"$regex": filter.phone}
-	}
-
-	if len(filter.stantion) > 0 {
-		query["stantion"] = bson.M{"$eq": filter.stantion}
-	}
-
-	if len(filter.called) > 0 {
-		query["called"] = bson.M{"$regex": filter.called}
-	}
-
-	log.Println(query)
-
-	if len(filter.start) > 0 && len(filter.end) > 0 {
-		fromDate, fErr := time.Parse("2006-01-02T15:04:05Z07:00", filter.start + "T00:00:00+03:00")
-		toDate, tErr := time.Parse("2006-01-02T15:04:05Z07:00", filter.end + "T23:59:59+03:00")
-
-		if fErr == nil || tErr == nil {
-			log.Println(fromDate, "-", toDate)
-			query["cvt.date_end"] =  bson.M{"$gt": fromDate, "$lt": toDate}
-		}
-	} /*else {
-		//Если фильтр дат не задан - выберем за последний месяц
-		now := time.Now()
-		currentYear, currentMonth, _ := now.Date()
-		currentLocation := now.Location()
-
-		fromDate := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
-		toDate := fromDate.AddDate(0, 1, -1)
-		query["cvt.date_end"] =  bson.M{"$gt": fromDate, "$lt": toDate}
-	}*/
-
-	// объект для сохранения результата
-	ci := []CallInfo{}
-	err := c.Find(query).Sort("-_id").
-		Limit(filter.limit).
-		Skip(filter.skip).
-		All(&ci)
+	phones := []Phones{}
+	err := c.Find(query).Sort("-_id").All(&phones)
 
 	if err != nil {
-		log.Println(err)
-		return []CallInfo{}
+		return []Phones{}, err
 	}
-	return ci
+	return phones, nil
 }
 
 func dateParse(c *smdr.Conversation) time.Time{

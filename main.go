@@ -21,9 +21,10 @@ func (p *DataProducer) getOutChan() <- chan CallInfo{
 const MAX_PARSED_CICLES int = 100
 
 //Получение данных со станции
-func stantionListener(phone Stantion, p DataProducer)  {
+func stantionListener(phone Phones, p DataProducer)  {
 	for {
 		addr := strings.Join([]string{phone.Ip, phone.Port}, ":")
+		stDesc := string(phone.Id)
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			log.Fatal("dial error on addr:", addr, err)
@@ -37,39 +38,38 @@ func stantionListener(phone Stantion, p DataProducer)  {
 			r1 := smdr.SetRequest(smdr.DataRequest())
 			if wr, err := conn.Write([]byte(r1)); //Запрос #1
 				wr == 0 || err != nil {
-				log.Println(phone.Name, err)
+				log.Println(addr, err)
 				break
 			}
 
 			err = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 			if err != nil {
-				log.Println(phone.Name, err)
+				log.Println(addr, err)
 				break
 			}
 
-			log.Println("trying to get response from phone stantion", phone.Name)
+			log.Println("trying to get response from", stDesc)
 			buff := make([]byte, 1024)
 			rd, err := conn.Read(buff)
 			if err != nil{
-				log.Println(phone.Name, ": ", err)
+				log.Println(addr, err)
 			}
 
-			log.Println("trying to parse data", addr)
+			log.Println("trying to parse data", stDesc)
 			res := smdr.CDR{}
 			err = res.Parser(buff[:rd])
 			if err != nil {
-				log.Println(err)
-				log.Println(phone.Name, ":", err)
+				log.Println(err, stDesc)
 				kpi.stepUp()
 			} else {
 				call := fillParam(&res)
-				call.Stantion = phone.Name
+				call.Stantion = string(phone.Id)
 				p.OutChan <- call // Отправляем данные в канал
 				//Отправляем запрос о то, что все ок
 				r4 := smdr.SetRequest(smdr.ClientResponse(res.Sequence))
 				if wr, err := conn.Write([]byte(r4)); //Запрос #4
 					wr == 0 || err != nil {
-					log.Println("error on", phone.Name, "error text", err)
+					log.Println(err, stDesc)
 				} else {
 					kpi.stepDown() //Уменьшаем интервал
 					i++ //Увеличиваем счетчик распарсеных данных
@@ -77,16 +77,16 @@ func stantionListener(phone Stantion, p DataProducer)  {
 			}
 
 			if i >= MAX_PARSED_CICLES {
-				log.Println("disconnect from stantion", phone.Name, "limit of parsed data", i)
-				break;
+				log.Println("disconnect from", stDesc, "limit of parsed data", i)
+				break
 			}
 
 			d := time.Duration(kpi.current * float32(time.Second))
-			log.Println(phone.Name, "is sleep on", d)
+			log.Println("sleep on", d, stDesc)
 			time.Sleep(d)
 		}//end for
 
-		log.Println("error, when connect or receive data from stantion", addr)
+		log.Println("error, when connect or receive data", stDesc, "wait 60seconds")
 		time.Sleep(time.Minute) //Ждем 1 минуту, прежде чем выполнить повторное подключение
 	}
 }
@@ -99,16 +99,16 @@ func main() {
 	mongoStore.session = session
 	defer session.Close()
 
-	go func(){
-		startServer()
-	}()
-
 	//Создаем канал
 	p := DataProducer{
 		OutChan: make(chan CallInfo),
 	}
 
-	for _, phone := range cfg.Phones {
+	phones, err := getPhones()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, phone := range phones {
 		go stantionListener(phone, p) //Запускаем столько гоурутин, сколько телефонов
 	}
 
