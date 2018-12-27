@@ -86,17 +86,18 @@ func fillParam(r *smdr.CDR) CallInfo{
 	return call
 }
 
-func insertCall(call *CallInfo) bool {
+func insertCall(call *CallInfo) error {
 	var err error
 	c := mongoStore.session.DB(cfg.Database.Dbname).C(collection)
 
 	err = c.Insert(call)
 	if err != nil{
-		log.Fatal("error when trying write to mongoDB", err)
+		return err
+		//log.Fatal("error when trying write to mongoDB", err)
 	}
 
-	log.Println("write to DB success, date end call: ", call.Cvt.DateEnd, " dur:", call.Cvt.DateDiff)
-	return true
+	//log.Println("write to DB success, date end call: ", call.Cvt.DateEnd, " dur:", call.Cvt.DateDiff)
+	return nil
 }
 
 func getPhones() ([]Phones, error){

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/anmaslov/smdr"
 	"log"
 	"net"
@@ -22,9 +23,11 @@ const MAX_PARSED_CICLES int = 100
 
 //Получение данных со станции
 func stantionListener(phone Phones, p DataProducer)  {
+	dataRedis := Msg{Status:"ok"}
 	for {
 		addr := strings.Join([]string{phone.Ip, phone.Port}, ":")
 		stDesc := string(phone.Id)
+		dataRedis.Stantion = stDesc
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			log.Fatal("dial error on addr:", addr, err)
@@ -65,7 +68,7 @@ func stantionListener(phone Phones, p DataProducer)  {
 				call := fillParam(&res)
 				call.Stantion = string(phone.Id)
 				p.OutChan <- call // Отправляем данные в канал
-				//Отправляем запрос о то, что все ок
+				//Отправляем запрос о том, что все ок
 				r4 := smdr.SetRequest(smdr.ClientResponse(res.Sequence))
 				if wr, err := conn.Write([]byte(r4)); //Запрос #4
 					wr == 0 || err != nil {
@@ -83,8 +86,18 @@ func stantionListener(phone Phones, p DataProducer)  {
 
 			d := time.Duration(kpi.current * float32(time.Second))
 			log.Println("sleep on", d, stDesc)
+
+			dataRedis.Text = "sleep on " + d.String()
+			out, _ := json.Marshal(dataRedis)
+			redisdb.Publish("phones", string(out))
+
 			time.Sleep(d)
 		}//end for
+
+		dataRedis.Status = "error"
+		dataRedis.Text = "when connect or receive data, wait 1 minute"
+		out, _ := json.Marshal(dataRedis)
+		redisdb.Publish("phones", string(out))
 
 		log.Println("error, when connect or receive data", stDesc, "wait 60seconds")
 		time.Sleep(time.Minute) //Ждем 1 минуту, прежде чем выполнить повторное подключение
@@ -98,6 +111,10 @@ func main() {
 	session := initialiseMongo()
 	mongoStore.session = session
 	defer session.Close()
+
+	//redis server
+	redisdb = initRedis()
+	defer redisdb.Close()
 
 	//Создаем канал
 	p := DataProducer{
@@ -114,7 +131,15 @@ func main() {
 
 	for data := range p.getOutChan(){ //Ждем данных от канала
 		//fmt.Println("get data from chain", data)
-		insertCall(&data)
+		err := insertCall(&data)
+		if err != nil {
+			log.Fatal(err) //Падаем, т.к. запись в базу - критична
+		} else {
+			log.Println("write to DB success, date end call:", data.Cvt.DateEnd.String())
+			dataRedis := Msg{"ok", data.Stantion, data.Cvt.DateEnd.String()}
+			out, _ := json.Marshal(dataRedis)
+			redisdb.Publish("phones", string(out))
+		}
 	}
 
 }

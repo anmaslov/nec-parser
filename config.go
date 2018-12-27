@@ -13,16 +13,17 @@ type Db struct {
 	Password	string
 }
 
-type Stantion struct {
-	Name 	string
-	Ip		string
-	Port	string
+type Redis struct{
+	Addr 		string
+	Password	string
+	Db			int
 }
 
 type Configuration struct {
 	Env 	  	string
 	//Phones    	[]Stantion
 	Database	Db
+	Redis		Redis
 	Log			bool
 }
 
