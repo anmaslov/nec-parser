@@ -5,6 +5,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -32,6 +33,7 @@ type CallInfo struct{
 	Route1		string `bson:"route1"`
 	Route2		string `bson:"route2"`
 	Phone		string `bson:"phone"`
+	PhoneRaw	string `bson:"phone_raw"`
 	CallMetering	string `bson:"call_metering"`
 }
 
@@ -69,7 +71,9 @@ func fillParam(r *smdr.CDR) CallInfo{
 
 	call := CallInfo{Tp: r.Tp, TruncOut: r.TrunkOut, TruncInc: r.TrunkInc, Called: r.Called}
 
-	call.Phone = strings.Trim(r.Phone, " ")
+	call.PhoneRaw = strings.Trim(r.Phone, " ")
+	call.Phone = phoneParse(call.PhoneRaw)
+
 	call.Route1 = r.Route1
 	call.Route2 = r.Route2
 
@@ -124,4 +128,15 @@ func dateParse(c *smdr.Conversation) time.Time{
 	}
 
 	return dt
+}
+
+func phoneParse(phone string) string {
+
+	var validID = regexp.MustCompile(`^01[01345][0134567]\d{2}\s{1,}001$`)
+
+	if (validID.MatchString(phone)) {
+		return phone[2:6]
+	} else {
+		return phone
+	}
 }
