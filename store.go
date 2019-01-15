@@ -132,7 +132,7 @@ func dateParse(c *smdr.Conversation) time.Time{
 
 func phoneParse(phone string) string {
 
-	var validID = regexp.MustCompile(`^01[01345][0134567]\d{2}\s{1,}001$`)
+	var validID = regexp.MustCompile(`^01[0-5][0-9]\d{2}\s{1,}001$`)
 
 	if (validID.MatchString(phone)) {
 		return phone[2:6]
