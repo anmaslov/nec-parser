@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/anmaslov/smdr"
 	"log"
 	"net"
+	"os"
+	"os/user"
 	"strings"
 	"time"
 )
@@ -105,6 +108,17 @@ func stantionListener(phone Phones, p DataProducer)  {
 }
 
 func main() {
+
+	// Debug log
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+	f, err := os.OpenFile(dir+"/.parser.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println("file no exist")
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
 	//Загружаем конфигурацию
 	cfg.loadConfig()
 
