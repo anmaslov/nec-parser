@@ -28,9 +28,10 @@ type Configuration struct {
 }
 
 func (conf *Configuration)loadConfig() {
-	file, err := os.Open("conf.json")
+	//pwd, _ := os.Getwd()
+	file, err := os.Open("/etc/nec/conf.json")
 	if err != nil {
-		log.Fatal("can't open config file: ", err)
+		log.Fatal("can't open config file:", err)
 	}
 	defer file.Close()
 	decoder := json.NewDecoder(file)

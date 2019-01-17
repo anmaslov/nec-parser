@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/user"
 	"strings"
 	"time"
 )
@@ -102,19 +101,20 @@ func stantionListener(phone Phones, p DataProducer)  {
 		out, _ := json.Marshal(dataRedis)
 		redisdb.Publish("phones", string(out))
 
+		conn.Close()
+
 		log.Println("error, when connect or receive data", stDesc, "wait 60seconds")
 		time.Sleep(time.Minute) //Ждем 1 минуту, прежде чем выполнить повторное подключение
 	}
 }
 
 func main() {
-
 	// Debug log
-	usr, _ := user.Current()
-	dir := usr.HomeDir
-	f, err := os.OpenFile(dir+"/.parser.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	/*usr, _ := user.Current()
+	dir := usr.HomeDir*/
+	f, err := os.OpenFile("/var/log/phone.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		fmt.Println("file no exist")
+		fmt.Println("file no exist", err)
 	}
 	defer f.Close()
 	log.SetOutput(f)
