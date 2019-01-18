@@ -1,0 +1,10 @@
+/var/log/phone.log {
+    hourly
+    rotate 12
+    compress
+    delaycompress
+    copytruncate
+    size 10M
+    missingok
+    create 644 root root
+}
