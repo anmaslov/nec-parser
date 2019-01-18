@@ -32,10 +32,11 @@ func stantionListener(phone Phones, p DataProducer)  {
 		dataRedis.Stantion = stDesc
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
-			log.Fatal("dial error on addr:", addr, err)
-			return
+			log.Println("dial error on addr:", addr, err)
+			time.Sleep(time.Minute * 5)
+			continue
 		}
-		defer conn.Close()
+		//defer conn.Close() цикл ни когда не завершится!
 		kpi := fill()
 		//Основной цикл для получения данных
 		i := 0 //Счетчик распарсенных данных
@@ -112,12 +113,13 @@ func main() {
 	// Debug log
 	/*usr, _ := user.Current()
 	dir := usr.HomeDir*/
-	f, err := os.OpenFile("/var/log/phone.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile("/var/log/phone.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println("file no exist", err)
 	}
 	defer f.Close()
 	log.SetOutput(f)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	//Загружаем конфигурацию
 	cfg.loadConfig()
