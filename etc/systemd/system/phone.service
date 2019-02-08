@@ -1,0 +1,18 @@
+[Unit]
+Description=phone
+After=syslog.target
+After=network.target
+After=mysqld.service redis.service
+
+[Service]
+#LimitMEMLOCK=infinity
+#LimitNOFILE=65535
+Type=simple
+#User=root
+#Group=root
+WorkingDirectory=/etc/nec
+ExecStart=/etc/nec/nec
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
