@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/anmaslov/smdr"
 	"log"
+	"nec-parser/kpi"
 	"net"
 	"os"
 	"strings"
@@ -17,15 +18,15 @@ type DataProducer struct {
 	OutChan chan CallInfo
 }
 
-func (p *DataProducer) getOutChan() <- chan CallInfo{
+func (p *DataProducer) getOutChan() <-chan CallInfo {
 	return p.OutChan
 }
 
 const MAX_PARSED_CICLES int = 100
 
 //Получение данных со станции
-func stantionListener(phone Phones, p DataProducer)  {
-	dataRedis := Msg{Status:"ok"}
+func stantionListener(phone Phones, p DataProducer) {
+	dataRedis := Msg{Status: "ok"}
 	for {
 		addr := strings.Join([]string{phone.Ip, phone.Port}, ":")
 		stDesc := string(phone.Id)
@@ -36,14 +37,13 @@ func stantionListener(phone Phones, p DataProducer)  {
 			time.Sleep(time.Minute * 5)
 			continue
 		}
-		//defer conn.Close() цикл ни когда не завершится!
-		kpi := fill()
+		k := kpi.NewKpi()
 		//Основной цикл для получения данных
 		i := 0 //Счетчик распарсенных данных
 		for {
 			r1 := smdr.SetRequest(smdr.DataRequest())
 			if wr, err := conn.Write([]byte(r1)); //Запрос #1
-				wr == 0 || err != nil {
+			wr == 0 || err != nil {
 				log.Println(addr, err)
 				break
 			}
@@ -57,7 +57,7 @@ func stantionListener(phone Phones, p DataProducer)  {
 			log.Println("trying to get response from", stDesc)
 			buff := make([]byte, 1024)
 			rd, err := conn.Read(buff)
-			if err != nil{
+			if err != nil {
 				log.Println(addr, err)
 			}
 
@@ -66,7 +66,7 @@ func stantionListener(phone Phones, p DataProducer)  {
 			err = res.Parser(buff[:rd])
 			if err != nil {
 				log.Println(err, stDesc)
-				kpi.stepUp()
+				k.StepUp()
 			} else {
 				call := fillParam(&res)
 				call.Stantion = string(phone.Id)
@@ -74,11 +74,11 @@ func stantionListener(phone Phones, p DataProducer)  {
 				//Отправляем запрос о том, что все ок
 				r4 := smdr.SetRequest(smdr.ClientResponse(res.Sequence))
 				if wr, err := conn.Write([]byte(r4)); //Запрос #4
-					wr == 0 || err != nil {
+				wr == 0 || err != nil {
 					log.Println(err, stDesc)
 				} else {
-					kpi.stepDown() //Уменьшаем интервал
-					i++ //Увеличиваем счетчик распарсеных данных
+					k.StepDown() //Уменьшаем интервал
+					i++          //Увеличиваем счетчик распарсеных данных
 				}
 			}
 
@@ -87,7 +87,7 @@ func stantionListener(phone Phones, p DataProducer)  {
 				break
 			}
 
-			d := time.Duration(kpi.current * float32(time.Second))
+			d := time.Duration(k.GetCurrent() * float32(time.Second))
 			log.Println("sleep on", d, stDesc)
 
 			dataRedis.Text = "sleep on " + d.String()
@@ -95,7 +95,7 @@ func stantionListener(phone Phones, p DataProducer)  {
 			redisdb.Publish("phones", string(out))
 
 			time.Sleep(d)
-		}//end for
+		} //end for
 
 		dataRedis.Status = "error"
 		dataRedis.Text = "when connect or receive data, wait 1 minute"
@@ -145,7 +145,7 @@ func main() {
 		go stantionListener(phone, p) //Запускаем столько гоурутин, сколько телефонов
 	}
 
-	for data := range p.getOutChan(){ //Ждем данных от канала
+	for data := range p.getOutChan() { //Ждем данных от канала
 		//fmt.Println("get data from chain", data)
 		err := insertCall(&data)
 		if err != nil {
