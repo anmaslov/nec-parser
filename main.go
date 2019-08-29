@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/anmaslov/nec-parser/kpi"
 	"github.com/anmaslov/smdr"
@@ -26,11 +25,9 @@ const MAX_PARSED_CICLES int = 100
 
 //Получение данных со станции
 func stantionListener(phone Phones, p DataProducer) {
-	dataRedis := Msg{Status: "ok"}
 	for {
 		addr := strings.Join([]string{phone.Ip, phone.Port}, ":")
 		stDesc := string(phone.Id)
-		dataRedis.Stantion = stDesc
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			log.Println("dial error on addr:", addr, err)
@@ -90,17 +87,8 @@ func stantionListener(phone Phones, p DataProducer) {
 			d := time.Duration(k.GetCurrent() * float32(time.Second))
 			log.Println("sleep on", d, stDesc)
 
-			dataRedis.Text = "sleep on " + d.String()
-			out, _ := json.Marshal(dataRedis)
-			redisdb.Publish("phones", string(out))
-
 			time.Sleep(d)
 		} //end for
-
-		dataRedis.Status = "error"
-		dataRedis.Text = "when connect or receive data, wait 1 minute"
-		out, _ := json.Marshal(dataRedis)
-		redisdb.Publish("phones", string(out))
 
 		conn.Close()
 
@@ -110,9 +98,6 @@ func stantionListener(phone Phones, p DataProducer) {
 }
 
 func main() {
-	// Debug log
-	/*usr, _ := user.Current()
-	dir := usr.HomeDir*/
 	f, err := os.OpenFile("/var/log/phone.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println("file no exist", err)
@@ -127,10 +112,6 @@ func main() {
 	session := initialiseMongo()
 	mongoStore.session = session
 	defer session.Close()
-
-	//redis server
-	redisdb = initRedis()
-	defer redisdb.Close()
 
 	//Создаем канал
 	p := DataProducer{
@@ -152,9 +133,6 @@ func main() {
 			log.Fatal(err) //Падаем, т.к. запись в базу - критична
 		} else {
 			log.Println("write to DB success, date end call:", data.Cvt.DateEnd.String())
-			dataRedis := Msg{"ok", data.Stantion, data.Cvt.DateEnd.String()}
-			out, _ := json.Marshal(dataRedis)
-			redisdb.Publish("phones", string(out))
 		}
 	}
 
