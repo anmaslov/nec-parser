@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/anmaslov/nec-parser/kpi"
 	"github.com/anmaslov/smdr"
 	"log"
-	"nec-parser/kpi"
 	"net"
 	"os"
 	"strings"
