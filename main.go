@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/anmaslov/nec-parser/config"
 	"github.com/anmaslov/nec-parser/kpi"
 	"github.com/anmaslov/smdr"
+	"github.com/jessevdk/go-flags"
 	"log"
 	"net"
 	"os"
@@ -11,7 +13,7 @@ import (
 	"time"
 )
 
-var cfg = Configuration{}
+var cfg config.Config
 
 type DataProducer struct {
 	OutChan chan CallInfo
@@ -97,7 +99,18 @@ func stantionListener(phone Phones, p DataProducer) {
 	}
 }
 
+func init() {
+	parser := flags.NewParser(&cfg, flags.Default)
+	parser.SubcommandsOptional = true
+	_, err := parser.Parse()
+	if err != nil {
+		fmt.Printf("Error init: %s.\nFor help use -h\n", err)
+		os.Exit(1)
+	}
+}
+
 func main() {
+	//todo переделать логгер
 	f, err := os.OpenFile("/var/log/phone.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println("file no exist", err)
@@ -105,9 +118,6 @@ func main() {
 	defer f.Close()
 	log.SetOutput(f)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
-	//Загружаем конфигурацию
-	cfg.loadConfig()
 
 	session := initialiseMongo()
 	mongoStore.session = session
