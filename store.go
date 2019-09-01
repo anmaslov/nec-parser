@@ -15,32 +15,32 @@ const (
 )
 
 type DateInfo struct {
-	DateStart    time.Time `bson:"date_start"`
+	DateStart  time.Time `bson:"date_start"`
 	DateEnd    time.Time `bson:"date_end"`
-	DateDiff	string
-	SecondDiff  float64
+	DateDiff   string
+	SecondDiff float64
 }
 
-type CallInfo struct{
-	Stantion	string `bson:"stantion"`
-	Tp 			string `bson:"tp"`
-	TruncOut	string `bson:"trunc_out"`
-	TruncInc	string `bson:"trunc_inc"`
-	CallId		int    `bson:"call_id"`
-	Tenant		string `bson:"tenant"`
-	Called		string `bson:"called"`
-	Cvt			DateInfo
-	Route1		string `bson:"route1"`
-	Route2		string `bson:"route2"`
-	Phone		string `bson:"phone"`
-	PhoneRaw	string `bson:"phone_raw"`
-	CallMetering	string `bson:"call_metering"`
+type CallInfo struct {
+	Stantion     string `bson:"stantion"`
+	Tp           string `bson:"tp"`
+	TruncOut     string `bson:"trunc_out"`
+	TruncInc     string `bson:"trunc_inc"`
+	CallId       int    `bson:"call_id"`
+	Tenant       string `bson:"tenant"`
+	Called       string `bson:"called"`
+	Cvt          DateInfo
+	Route1       string `bson:"route1"`
+	Route2       string `bson:"route2"`
+	Phone        string `bson:"phone"`
+	PhoneRaw     string `bson:"phone_raw"`
+	CallMetering string `bson:"call_metering"`
 }
 
 type Phones struct {
-	Id bson.ObjectId `bson:"_id"`
-	Ip string `bson:"ip"`
-	Port string `bson:"port"`
+	Id   bson.ObjectId `bson:"_id"`
+	Ip   string        `bson:"ip"`
+	Port string        `bson:"port"`
 }
 
 type MongoStore struct {
@@ -49,14 +49,14 @@ type MongoStore struct {
 
 var mongoStore = MongoStore{}
 
-func initialiseMongo() (session *mgo.Session){
+func initialiseMongo() (session *mgo.Session) {
 
 	info := &mgo.DialInfo{
-		Addrs:    []string{cfg.Database.Host},
-		Timeout:  60 * time.Second,
-		Database: cfg.Database.Dbname,
-		Username: cfg.Database.Username,
-		Password: cfg.Database.Password,
+		Addrs:    []string{cfg.DbAddress},
+		Timeout:  time.Duration(cfg.DbTimeOut) * time.Second,
+		Database: cfg.DbName,
+		Username: cfg.DbUser,
+		Password: cfg.DbPassword,
 	}
 
 	session, err := mgo.DialWithInfo(info)
@@ -67,7 +67,7 @@ func initialiseMongo() (session *mgo.Session){
 	return
 }
 
-func fillParam(r *smdr.CDR) CallInfo{
+func fillParam(r *smdr.CDR) CallInfo {
 
 	call := CallInfo{Tp: r.Tp, TruncOut: r.TrunkOut, TruncInc: r.TrunkInc, Called: r.Called}
 
@@ -92,10 +92,10 @@ func fillParam(r *smdr.CDR) CallInfo{
 
 func insertCall(call *CallInfo) error {
 	var err error
-	c := mongoStore.session.DB(cfg.Database.Dbname).C(collection)
+	c := mongoStore.session.DB(cfg.DbName).C(collection)
 
 	err = c.Insert(call)
-	if err != nil{
+	if err != nil {
 		return err
 		//log.Fatal("error when trying write to mongoDB", err)
 	}
@@ -104,8 +104,8 @@ func insertCall(call *CallInfo) error {
 	return nil
 }
 
-func getPhones() ([]Phones, error){
-	c := mongoStore.session.DB(cfg.Database.Dbname).C("phones")
+func getPhones() ([]Phones, error) {
+	c := mongoStore.session.DB(cfg.DbName).C("phones")
 
 	query := bson.M{}
 	query["enabled"] = bson.M{"$eq": true}
@@ -119,9 +119,9 @@ func getPhones() ([]Phones, error){
 	return phones, nil
 }
 
-func dateParse(c *smdr.Conversation) time.Time{
+func dateParse(c *smdr.Conversation) time.Time {
 	strDate := c.Year + "-" + c.Month + "-" + c.Day + "T" + c.Hour + ":" + c.Minute + ":" + c.Second
-	dt, err := time.Parse("06-01-02T15:04:05Z07:00", strDate + "+03:00")
+	dt, err := time.Parse("06-01-02T15:04:05Z07:00", strDate+"+03:00")
 
 	if err != nil {
 		log.Println("failed when date parse", err)
@@ -134,7 +134,7 @@ func phoneParse(phone string) string {
 
 	var validID = regexp.MustCompile(`^01[0-5][0-9]\d{2}\s{1,}001$`)
 
-	if (validID.MatchString(phone)) {
+	if validID.MatchString(phone) {
 		return phone[2:6]
 	} else {
 		return phone
