@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/anmaslov/nec-parser/config"
+	"github.com/anmaslov/nec-parser/store"
 	"github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -47,16 +48,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	session := initialiseMongo()
-	mongoStore.session = session
-	defer session.Close()
+	mongoConfig := &config.Db{
+		Host:     cfg.DbAddress,
+		Dbname:   cfg.DbName,
+		Username: cfg.DbUser,
+		Password: cfg.DbPassword,
+	}
+
+	mongo, err := store.NewMongo(mongoConfig)
+	if err != nil {
+		logger.Fatal("error creating connection to MongoDb", zap.Error(err))
+	}
+	defer mongo.Session.Close()
 
 	//Создаем канал
 	p := DataProducer{
-		OutChan: make(chan CallInfo),
+		OutChan: make(chan store.CallInfo),
 	}
 
-	phones, err := getPhones()
+	phones, err := mongo.GetPhones()
 	if err != nil {
 		logger.Fatal("unable to get phones", zap.Error(err))
 	}
@@ -66,7 +76,7 @@ func main() {
 	}
 
 	for data := range p.getOutChan() { //Ждем данных от канала
-		err := insertCall(&data)
+		err := mongo.InsertCall(&data)
 		if err != nil {
 			logger.Fatal("unable to write db", zap.Error(err)) //Падаем, т.к. запись в базу - критична
 		}

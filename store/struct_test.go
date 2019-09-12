@@ -1,4 +1,4 @@
-package main
+package store
 
 import (
 	"testing"
@@ -6,9 +6,7 @@ import (
 
 func TestPhoneParse(t *testing.T) {
 
-	var v string
-
-	v = phoneParse("015030  001")
+	v := phoneParse("015030  001")
 	if v != "5030" {
 		t.Error("Expected 5030, got ", v)
 	}
