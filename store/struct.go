@@ -1,17 +1,12 @@
-package main
+package store
 
 import (
 	"github.com/anmaslov/smdr"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"regexp"
 	"strings"
 	"time"
-)
-
-const (
-	collection = "calls"
 )
 
 type DateInfo struct {
@@ -43,33 +38,10 @@ type Phones struct {
 	Port string        `bson:"port"`
 }
 
-type MongoStore struct {
-	session *mgo.Session
-}
+// FillParam заполенение структуры звонка
+func FillParam(r *smdr.CDR) *CallInfo {
 
-var mongoStore = MongoStore{}
-
-func initialiseMongo() (session *mgo.Session) {
-
-	info := &mgo.DialInfo{
-		Addrs:    []string{cfg.DbAddress},
-		Timeout:  time.Duration(cfg.DbTimeOut) * time.Second,
-		Database: cfg.DbName,
-		Username: cfg.DbUser,
-		Password: cfg.DbPassword,
-	}
-
-	session, err := mgo.DialWithInfo(info)
-	if err != nil {
-		log.Fatal("can't connect to mongoDb", err)
-	}
-
-	return
-}
-
-func fillParam(r *smdr.CDR) CallInfo {
-
-	call := CallInfo{Tp: r.Tp, TruncOut: r.TrunkOut, TruncInc: r.TrunkInc, Called: r.Called}
+	call := &CallInfo{Tp: r.Tp, TruncOut: r.TrunkOut, TruncInc: r.TrunkInc, Called: r.Called}
 
 	call.PhoneRaw = strings.Trim(r.Phone, " ")
 	call.Phone = phoneParse(call.PhoneRaw)
@@ -88,35 +60,6 @@ func fillParam(r *smdr.CDR) CallInfo {
 	call.CallMetering = r.CallMetering
 
 	return call
-}
-
-func insertCall(call *CallInfo) error {
-	var err error
-	c := mongoStore.session.DB(cfg.DbName).C(collection)
-
-	err = c.Insert(call)
-	if err != nil {
-		return err
-		//log.Fatal("error when trying write to mongoDB", err)
-	}
-
-	//log.Println("write to DB success, date end call: ", call.Cvt.DateEnd, " dur:", call.Cvt.DateDiff)
-	return nil
-}
-
-func getPhones() ([]Phones, error) {
-	c := mongoStore.session.DB(cfg.DbName).C("phones")
-
-	query := bson.M{}
-	query["enabled"] = bson.M{"$eq": true}
-
-	phones := []Phones{}
-	err := c.Find(query).Sort("-_id").All(&phones)
-
-	if err != nil {
-		return []Phones{}, err
-	}
-	return phones, nil
 }
 
 func dateParse(c *smdr.Conversation) time.Time {
