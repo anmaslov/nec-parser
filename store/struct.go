@@ -3,7 +3,6 @@ package store
 import (
 	"github.com/anmaslov/smdr"
 	"gopkg.in/mgo.v2/bson"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -64,17 +63,12 @@ func FillParam(r *smdr.CDR) *CallInfo {
 
 func dateParse(c *smdr.Conversation) time.Time {
 	strDate := c.Year + "-" + c.Month + "-" + c.Day + "T" + c.Hour + ":" + c.Minute + ":" + c.Second
-	dt, err := time.Parse("06-01-02T15:04:05Z07:00", strDate+"+03:00")
-
-	if err != nil {
-		log.Println("failed when date parse", err)
-	}
+	dt, _ := time.Parse("06-01-02T15:04:05Z07:00", strDate+"+03:00")
 
 	return dt
 }
 
 func phoneParse(phone string) string {
-
 	var validID = regexp.MustCompile(`^01[0-5][0-9]\d{2}\s{1,}001$`)
 
 	if validID.MatchString(phone) {
