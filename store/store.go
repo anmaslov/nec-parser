@@ -44,7 +44,6 @@ func (ms *MongoStore) InsertCall(call *CallInfo) error {
 		return fmt.Errorf("error when trying write to mongoDB: %s", err)
 	}
 
-	//log.Println("write to DB success, date end call: ", call.Cvt.DateEnd, " dur:", call.Cvt.DateDiff)
 	return nil
 }
 
