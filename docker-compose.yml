@@ -1,0 +1,29 @@
+version: '3'
+services:
+  nec-parser:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    environment:
+      NP_LOG_LEVEL: debug
+      NP_DB_ADDRESS: mongo:27017
+      NP_DB_NAME: smdr
+      NP_DB_USER: root
+      NP_DB_PASSWORD: example
+    depends_on:
+      - mongo
+    links:
+      - mongo
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: smdr
+    ports:
+      - 27017:27017
+    volumes:
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./mongodb:/data/db
