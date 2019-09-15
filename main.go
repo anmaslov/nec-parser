@@ -61,24 +61,20 @@ func main() {
 	}
 	defer mongo.Session.Close()
 
-	//Создаем канал
-	p := DataProducer{
-		OutChan: make(chan store.CallInfo),
-	}
-
 	phones, err := mongo.GetPhones()
 	if err != nil {
 		logger.Fatal("unable to get phones", zap.Error(err))
 	}
 
+	chCall := make(chan store.CallInfo)
 	for _, phone := range phones {
-		go stListener(phone, p, logger)
+		go stListener(phone, chCall, logger)
 	}
 
-	for data := range p.getOutChan() { //Ждем данных от канала
+	for data := range chCall {
 		err := mongo.InsertCall(&data)
 		if err != nil {
-			logger.Fatal("unable to write db", zap.Error(err)) //Падаем, т.к. запись в базу - критична
+			logger.Fatal("unable to write db", zap.Error(err))
 		}
 
 		logger.Debug("write to DB success, date end call", zap.String("date_end", data.Cvt.DateEnd.String()))

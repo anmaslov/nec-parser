@@ -61,6 +61,7 @@ func FillParam(r *smdr.CDR) *CallInfo {
 	return call
 }
 
+// dateParse парсинг даты
 func dateParse(c *smdr.Conversation) time.Time {
 	strDate := c.Year + "-" + c.Month + "-" + c.Day + "T" + c.Hour + ":" + c.Minute + ":" + c.Second
 	dt, _ := time.Parse("06-01-02T15:04:05Z07:00", strDate+"+03:00")
@@ -68,12 +69,13 @@ func dateParse(c *smdr.Conversation) time.Time {
 	return dt
 }
 
+// phoneParse парсинг телефона под определенный формат
 func phoneParse(phone string) string {
-	var validID = regexp.MustCompile(`^01[0-5][0-9]\d{2}\s{1,}001$`)
+	validID := regexp.MustCompile(`^01[0-5][0-9]\d{2}\s{1,}001$`)
 
 	if validID.MatchString(phone) {
 		return phone[2:6]
-	} else {
-		return phone
 	}
+
+	return phone
 }
