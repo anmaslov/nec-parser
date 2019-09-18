@@ -49,13 +49,13 @@ func stListener(phone store.Phones, chCall chan<- store.CallInfo, logger *zap.Lo
 			}
 
 			log.Debug("trying to parse data")
-			res := smdr.CDR{}
+			res := smdr.New()
 			err = res.Parser(buff[:rd])
 			if err != nil {
 				log.Error("error when parse data", zap.Error(err))
 				k.StepUp()
 			} else {
-				call := store.FillParam(&res)
+				call := store.FillParam(res)
 				call.Stantion = string(phone.Id)
 				chCall <- *call // Отправляем данные в канал
 
