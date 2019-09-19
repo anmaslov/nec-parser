@@ -1,5 +1,5 @@
-github.com/anmaslov/smdr v1.0.1 h1:QR1w4DefT1msJfDkfKbIWaplO33srWNOTMInrlQyUxw=
-github.com/anmaslov/smdr v1.0.1/go.mod h1:GUDgjKF/x5qDCphOncSnV5TwNNjZsWy5W/zU/biLYnY=
+github.com/anmaslov/smdr v1.2.0 h1:eiqHRjboQ3DvGSxUhH1bccfhgf5vfuT0Inx8bz4yKX0=
+github.com/anmaslov/smdr v1.2.0/go.mod h1:GUDgjKF/x5qDCphOncSnV5TwNNjZsWy5W/zU/biLYnY=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/jessevdk/go-flags v1.4.0 h1:4IU2WS7AumrZ/40jfhf4QVDMsQwqA7VEHozFRrGARJA=
